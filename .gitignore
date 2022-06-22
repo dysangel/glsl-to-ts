@@ -1,2 +1,2 @@
-input.glsl
-output.ts
+*.glsl
+*.ts

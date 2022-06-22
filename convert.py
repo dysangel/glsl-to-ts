@@ -4,7 +4,7 @@ from util.output import formatted_api_function_list, formatted_function_list
 
 import sys
 
-input_file = str(sys.argv[0])
+input_file = str(sys.argv[1])
 
 with open(input_file) as f:
   lines = f.readlines()

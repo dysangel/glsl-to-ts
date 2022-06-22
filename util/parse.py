@@ -70,7 +70,7 @@ def make_ts_args(args):
   return ', '.join(ts_args)
 
 def make_ts_function(symbol, type_info, args):
-  return f"export function {symbol}({make_ts_args(args)}): {type_info['ts_type']}" + ' {'
+  return f"function {symbol}({make_ts_args(args)}): {type_info['ts_type']}" + ' {'
   
 def make_ts_api_function_definition(symbol, type_info, args):
   return f"({make_ts_args(args)}) => {type_info['ts_type']}"

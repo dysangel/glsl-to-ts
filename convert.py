@@ -2,7 +2,11 @@ from util.parse import clean_tokens, count_char, process_define, process_block_h
 from util.print import print_functions, print_symbols_table
 from util.output import formatted_api_function_list, formatted_function_list
 
-with open('simple.glsl') as f:
+import sys
+
+input_file = str(sys.argv[0])
+
+with open(input_file) as f:
   lines = f.readlines()
 
 tokens = tokenise(lines)

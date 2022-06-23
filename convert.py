@@ -59,12 +59,12 @@ for i in range(len(tokens)):
       if block_depth == 0:
         #tokens_to_process.pop()
         processed_block = process_block_header(symbols, tokens_to_process, block_depth)
-        new_symbol = processed_block['symbols']
-        symbols.update(new_symbol)
-        print('new_symbol', new_symbol)
+        new_symbols = processed_block['symbols']
+        symbols.update(new_symbols)
+        print('new_symbols', new_symbols)
         symbol_type = ''
-        for key in new_symbol:
-          symbol_type = new_symbol[key]['symbol_type']
+        for key in new_symbols:
+          symbol_type = new_symbols[key]['symbol_type']
         if symbol_type == 'function':
           final_tokens.extend(['\n\n',processed_block['ts_block_header']])
         else:
@@ -85,7 +85,10 @@ for i in range(len(tokens)):
       #print('block_depth', block_depth)
       
     if token == ';':
-      processed_tokens = process_statement(tokens_to_process, block_depth, in_struct)
+      result = process_statement(symbols, tokens_to_process, block_depth, in_struct)
+      symbols.update(result['symbols'])
+      processed_tokens = result['processed_tokens']
+      
       final_tokens.extend(processed_tokens)
       tokens_to_process.clear()
   #print('processed token', token, 'block depth is', block_depth)

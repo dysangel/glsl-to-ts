@@ -2,7 +2,7 @@ import re
   
 def process_define(tokens):
   tokens = clean_tokens(tokens)
-  print('define: ', tokens)
+  #print('define: ', tokens)
   
 def process_block_header(symbols, original_tokens, block_depth):
   tokens = clean_tokens(original_tokens)
@@ -14,8 +14,8 @@ def process_block_header(symbols, original_tokens, block_depth):
   new_symbols = {}
   if tokens[0] == 'struct':
     struct = tokens[1]
-    print('----------\nstruct definition')
-    print('symbol:',struct)
+    #print('----------\nstruct definition')
+    #print('symbol:',struct)
     new_symbols[struct] = {
       'symbol_type': 'struct',
       'type_info': {
@@ -35,8 +35,8 @@ def process_block_header(symbols, original_tokens, block_depth):
 
       type_info = get_type_info(symbols, tokens[0: start_index - 1], block_depth)
       
-      print('process_block_header tokens', tokens[start_index + 1: close_index])
-      print('')
+      #print('process_block_header tokens', tokens[start_index + 1: close_index])
+      #print('')
       args = process_args(symbols, tokens[start_index + 1: close_index], block_depth)
       print('symbol info is', type_info)
       ts_version = make_ts_function(symbol, type_info, args)
@@ -48,7 +48,7 @@ def process_block_header(symbols, original_tokens, block_depth):
         'ts_version': ts_version,
         'ts_api_type': ts_api_type,
       }
-      print('-------------\n', ts_version,'\n-------------')
+      #print('-------------\n', ts_version,'\n-------------')
     elif start_index > -1:
       print('weird open parenthesis position for tokens: ', tokens)
       
@@ -101,35 +101,53 @@ def get_arg_groups(symbols, tokens, block_depth):
 def process_args(symbols, tokens, block_depth):
   tokens = clean_tokens(tokens)
   arg_groups = get_arg_groups(symbols, tokens, block_depth)
-  print('arg groups')
-  for group in arg_groups:
-    print(group, ':', arg_groups[group])
+  # print('arg groups')
+  # for group in arg_groups:
+  #   print(group, ':', arg_groups[group])
   
   return arg_groups
   
-def process_type(tokens):
-  tokens = clean_tokens(tokens)
-  print('type:', tokens)
-  return tokens[-1]
-  
-def process_statement(tokens, block_depth, in_struct):
+def process_statement(symbols, tokens, block_depth, in_struct):
   if block_depth == 0 or in_struct:
-    return tokens
+    return {
+      'symbols': {},
+      'processed_tokens': tokens,
+    }
     
   #print('process statement placeholder, check for a type definition', tokens)
   assigment_index = find_assignment_index(tokens)
   processed_tokens = []
+  new_symbols = {}
   
   if assigment_index > -1:
     whitespace = get_starting_whitespace(tokens)
     cleaned_tokens = clean_tokens(tokens[0:assigment_index])
-    processed_tokens = [*whitespace, f'let {cleaned_tokens[-1]} ', *tokens[assigment_index:]]
-    print('processed tokens are', processed_tokens)
+    print('\n----------\n')
+    print('cleaned tokens are', [*cleaned_tokens, *tokens[assigment_index:]])
+    if assigment_index > 1:
+      symbol = cleaned_tokens[-1]
+      type_info = get_type_info(symbols, cleaned_tokens[:-1], block_depth)
+      print(f'\ntype info for {cleaned_tokens}:', get_type_info(symbols, cleaned_tokens[:-1], block_depth))
+      new_symbols[symbol] = {
+        'symbol_type': 'variable',
+        'type_info': type_info
+      }
+      print(new_symbols[symbol])
+    
+      processed_tokens = [*whitespace, f'let {cleaned_tokens[-1]} ', *tokens[assigment_index:]]
+      
+      for token in tokens[assigment_index:]:
+        if is_only_symbol_characters(token):
+          print('right side token:', token)
+          print(get_type_info(symbols, [token], block_depth))
+    else:
+      processed_tokens = tokens
+    #print('\nprocessed tokens are', [f'let {cleaned_tokens[-1]} ', *tokens[assigment_index:]])
   elif only_symbols_and_whitespace(tokens):
     whitespace = get_starting_whitespace(tokens)
     cleaned_tokens = clean_tokens(tokens[0:])
     if len(cleaned_tokens) > 1:
-      print('cleaned tokens are', cleaned_tokens)
+      print('\ncleaned tokens are', cleaned_tokens)
       symbol = cleaned_tokens[len(cleaned_tokens) - 2]
       processed_tokens = [*whitespace, f'let {symbol};']
     else:
@@ -137,7 +155,10 @@ def process_statement(tokens, block_depth, in_struct):
   else:
     processed_tokens = tokens
     
-  return processed_tokens
+  return {
+    'symbols': new_symbols,
+    'processed_tokens': processed_tokens,
+  }
 
 def clean_tokens(tokens):
   cleaned_list = []
@@ -176,7 +197,7 @@ def tokenise_line(string):
     char = string[count]
     
     last_is_symbol = is_symbol
-    is_symbol = is_symbol_character(char)
+    is_symbol = is_only_symbol_characters(char)
     
     if is_newline(char):
       token = string[last_transition:count].strip()
@@ -203,7 +224,7 @@ def tokenise_line(string):
   
   return tokens
 
-def is_symbol_character(string):
+def is_only_symbol_characters(string):
   return bool(re.match('[a-zA-Z0-9_#\.]', string))
 
 def is_newline(string):
@@ -227,7 +248,7 @@ def get_starting_whitespace(tokens):
 def only_symbols_and_whitespace(tokens):
   # skip semicolon
   for i in range(len(tokens) - 1):
-    if is_symbol_character(tokens[i]) or is_whitespace(tokens[i]):
+    if is_only_symbol_characters(tokens[i]) or is_whitespace(tokens[i]):
       continue
     else:
       return False
@@ -272,13 +293,14 @@ def get_type_info(symbols, tokens, block_depth):
 
   last = tokens[-1]
   
-  if last in symbols:
-    return symbols[last]['type_info']
-    
+  if len(tokens) == 1:
+    if last in symbols:
+      return symbols[last]['type_info']
+
   ts_type = last
   if len(ts_type) > 3 and ts_type[0:3] =='vec':
     ts_type = 'Vec' + ts_type[3:]
-    
+
   return {
     'glsl_type': ' '.join(tokens),
     'ts_type': ts_type,

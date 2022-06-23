@@ -247,13 +247,18 @@ def find_close_parenthesis_index(tokens):
   return -1
 
 def find_assignment_index(tokens):
+  in_comment = False
+  
   for i in range(len(tokens)):
     if tokens[i] == '/':
       if (i > 0):
         if tokens[i-1] == '/':
-          return -1
+          in_comment = True
+          
+    if tokens[i] == '\n':
+      in_comment = False
         
-    if tokens[i] == '=':
+    if not in_comment and tokens[i] == '=':
       if i > 0 and tokens[i-1] == '=':
         continue
       if (i + 1) < len(tokens) and tokens[i+1] == '=':

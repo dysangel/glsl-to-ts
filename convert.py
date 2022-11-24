@@ -21,6 +21,7 @@ tokens_to_process = []
 in_define = False
 in_struct = False
 in_comment = False
+in_multiline_comment = False
 
 final_tokens = []
 
@@ -31,10 +32,19 @@ for i in range(len(tokens)):
   if token == '/':
     if last_token == '/':
       in_comment = True
+      
+  if token == '*':
+    if last_token == '/':
+      in_multiline_comment = True
   
-  if in_comment:
+  if in_comment or in_multiline_comment:
     tokens_to_process.append(token)
     
+    if token == '/' and last_token == '*':
+      final_tokens.extend(tokens_to_process)
+      tokens_to_process.clear()
+      in_multiline_comment = False
+      
     if token == '\n':
       final_tokens.extend(tokens_to_process)
       tokens_to_process.clear()
@@ -85,7 +95,7 @@ for i in range(len(tokens)):
       #print('block_depth', block_depth)
       
     if token == ';':
-      result = process_statement(symbols, tokens_to_process, block_depth, in_struct)
+      result = process_statement(symbols, tokens_to_process, block_depth, in_struct, in_comment, in_multiline_comment)
       symbols.update(result['symbols'])
       processed_tokens = result['processed_tokens']
       
@@ -93,8 +103,8 @@ for i in range(len(tokens)):
       tokens_to_process.clear()
   #print('processed token', token, 'block depth is', block_depth)
 
-#print_symbols_table(symbols)
-#print_functions(symbols)
+print_symbols_table(symbols)
+print_functions(symbols)
 
 with open('output.ts', 'w') as f:
     f.write(''.join(final_tokens))

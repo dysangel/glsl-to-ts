@@ -107,7 +107,7 @@ def process_args(symbols, tokens, block_depth):
   
   return arg_groups
   
-def process_statement(symbols, tokens, block_depth, in_struct):
+def process_statement(symbols, tokens, block_depth, in_struct, in_comment, in_multiline_comment):
   if block_depth == 0 or in_struct:
     return {
       'symbols': {},
@@ -115,7 +115,7 @@ def process_statement(symbols, tokens, block_depth, in_struct):
     }
     
   #print('process statement placeholder, check for a type definition', tokens)
-  assigment_index = find_assignment_index(tokens)
+  assigment_index = find_assignment_index(tokens, in_comment, in_multiline_comment)
   processed_tokens = []
   new_symbols = {}
   
@@ -267,19 +267,20 @@ def find_close_parenthesis_index(tokens):
       return i
   return -1
 
-def find_assignment_index(tokens):
-  in_comment = False
-  
+def find_assignment_index(tokens, in_comment, in_multiline_comment):
   for i in range(len(tokens)):
     if tokens[i] == '/':
       if (i > 0):
         if tokens[i-1] == '/':
           in_comment = True
           
+        if tokens[i-1] == '*':
+          in_multiline_comment = False
+          
     if tokens[i] == '\n':
       in_comment = False
         
-    if not in_comment and tokens[i] == '=':
+    if not (in_comment or in_multiline_comment) and tokens[i] == '=':
       if i > 0 and tokens[i-1] == '=':
         continue
       if (i + 1) < len(tokens) and tokens[i+1] == '=':
